@@ -1,13 +1,22 @@
 use std::fs::File;
-use std::io::prelude::*;
+use std::io::{prelude::*, self};
+use std::num::ParseIntError;
 
-pub fn input_from_file(filename: &str) -> Vec<u32> {
-    let mut file = File::open(filename).expect("Can't open file");
+#[derive(Debug)]
+pub enum InputFromFileError {
+    ParseIntError(ParseIntError),
+    IoError(io::Error),
+}
+
+pub fn input_from_file(filename: &str) -> Result<Vec<u32>, InputFromFileError> {
+    let mut file = File::open(filename).map_err(InputFromFileError::IoError)?;
 
     let mut contents = String::new();
-    file.read_to_string(&mut contents).expect("Oops! Can not read the file...");
+    file.read_to_string(&mut contents).map_err(InputFromFileError::IoError)?;
 
-    return contents.split_whitespace().map(|s| s.parse::<u32>().unwrap()).collect();
+    contents.split_whitespace()
+        .map(|s| s.parse().map_err(InputFromFileError::ParseIntError))
+        .collect()
 }
 
 pub fn part1(depths: &[u32]) -> u32 {
