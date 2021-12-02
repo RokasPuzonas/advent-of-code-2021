@@ -53,6 +53,23 @@ pub fn part1(commands: &[CommandLine]) -> u32 {
     return depth * horizontal;
 }
 
+pub fn part2(commands: &[CommandLine]) -> u32 {
+    let mut depth = 0;
+    let mut horizontal = 0;
+    let mut aim = 0;
+    for command in commands {
+        match command.0 {
+            Command::Up      => aim -= command.1,
+            Command::Down    => aim += command.1,
+            Command::Forward => {
+                horizontal += command.1;
+                    depth += aim * command.1;
+            }
+        }
+    }
+    return depth * horizontal;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -69,6 +86,20 @@ mod tests {
         ];
         let result = part1(&commands);
         assert_eq!(result, 150);
+    }
+
+    #[test]
+    fn part2_example() {
+        let commands = [
+            CommandLine(Command::Forward, 5),
+            CommandLine(Command::Down, 5),
+            CommandLine(Command::Forward, 8),
+            CommandLine(Command::Up, 3),
+            CommandLine(Command::Down, 8),
+            CommandLine(Command::Forward, 2)
+        ];
+        let result = part2(&commands);
+        assert_eq!(result, 900)
     }
 }
 
