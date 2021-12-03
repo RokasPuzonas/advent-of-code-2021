@@ -1,21 +1,8 @@
-use std::fs::File;
-use std::io::{prelude::*, self};
 use std::num::ParseIntError;
 
-#[derive(Debug)]
-pub enum InputFromFileError {
-    ParseIntError(ParseIntError),
-    IoError(io::Error),
-}
-
-pub fn input_from_file(filename: &str) -> Result<Vec<u32>, InputFromFileError> {
-    let mut file = File::open(filename).map_err(InputFromFileError::IoError)?;
-
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).map_err(InputFromFileError::IoError)?;
-
-    contents.split_whitespace()
-        .map(|s| s.parse().map_err(InputFromFileError::ParseIntError))
+pub fn parse_input(input: &str) -> Result<Vec<u32>, ParseIntError> {
+    input.split_whitespace()
+        .map(|s| s.parse())
         .collect()
 }
 

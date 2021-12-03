@@ -1,18 +1,23 @@
 mod day1;
 mod day2;
 
+use std::fs::File;
+use std::io::prelude::*;
+
 fn main() {
-    let input_filename = "input2.txt";
-    let input = day2::input_from_file(input_filename)
-        .expect("Failed to read input2.txt");
+    let input_filename = "input1.txt";
 
-    // let result1 = day1::part1(&input);
-    // let result2 = day1::part2(&input);
-    
-    let result1 = day2::part1(&input);
-    let result2 = day2::part2(&input);
+    let mut input_file = File::open(input_filename)
+        .expect("Input file not found");
 
-    println!("Part 1 result: {}", result1);
-    println!("Part 2 result: {}", result2);
+    let mut contents = String::new();
+    input_file.read_to_string(&mut contents)
+        .expect("Could not read input file");
+
+    let input = day2::parse_input(input_filename)
+        .expect("Failed to parse input");
+
+    println!("Part 1 result: {}", day2::part1(&input));
+    println!("Part 2 result: {}", day2::part2(&input));
 }
 
