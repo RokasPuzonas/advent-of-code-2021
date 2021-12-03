@@ -2,7 +2,9 @@
 
 https://adventofcode.com/2021
 
-Error handling: http://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/first-edition/error-handling.html#a-brief-interlude-unwrapping-isnt-evil
+## Challenge
+
+Learn rust through advent of code.
 
 ## Resources
 * https://github.com/ithinuel/advent-of-code-rust/tree/2020/src/bin
