@@ -1,10 +1,10 @@
-mod day4;
+mod day5;
 
 use std::fs::File;
 use std::io::prelude::*;
 
 fn main() {
-    let input_filename = "input4.txt";
+    let input_filename = "input5.txt";
 
     let mut input_file = File::open(input_filename)
         .expect("Input file not found");
@@ -13,10 +13,10 @@ fn main() {
     input_file.read_to_string(&mut contents)
         .expect("Could not read input file");
 
-    let input = day4::parse_input(&contents)
+    let input = day5::parse_input(&contents)
         .expect("Failed to parse input");
-
-    println!("Part 1 result: {}", day4::part1(&input));
-    println!("Part 2 result: {}", day4::part2(&input));
+    
+    println!("Part 1 result: {}", day5::part1(&input));
+    println!("Part 2 result: {}", day5::part2(&input));
 }
 
