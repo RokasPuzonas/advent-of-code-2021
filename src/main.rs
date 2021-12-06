@@ -52,7 +52,7 @@ fn main() {
     if args.len() > 3 {
         input_filename = args[3].clone();
     } else {
-        input_filename = format!("input{}.txt", day);
+        input_filename = format!("input/{}.txt", day);
     }
     run(day, part, &input_filename);
 }
