@@ -52,6 +52,7 @@ fn run(day: i32, part: i32, input_filename: &str) {
         "12.1" => println!("{}", day12::part1(&day12::parse_input(&contents))),
         "12.2" => println!("{}", day12::part2(&day12::parse_input(&contents))),
         "13.1" => println!("{}", day13::part1(&day13::parse_input(&contents))),
+        "13.2" => day13::part2(&day13::parse_input(&contents)),
         _ => println!("Day {} part {} not found", day, part)
     }
 }

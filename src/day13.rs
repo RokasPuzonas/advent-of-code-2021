@@ -83,6 +83,47 @@ pub fn part1(input: &InputData) -> usize {
     folded_dots.len() as usize
 }
 
+fn determine_dot_bounds(dots: &HashSet<Dot>) -> (u32, u32, u32, u32) {
+    let mut min_x = u32::MAX;
+    let mut min_y = u32::MAX;
+    let mut max_x = u32::MIN;
+    let mut max_y = u32::MIN;
+
+    for dot in dots {
+        min_x = min_x.min(dot.0);
+        min_y = min_y.min(dot.1);
+        max_x = max_x.max(dot.0);
+        max_y = max_y.max(dot.1);
+    }
+
+    return (min_x, min_y, max_x, max_y);
+}
+
+fn render_dots(dots: &HashSet<Dot>) {
+    let (min_x, min_y, max_x, max_y) = determine_dot_bounds(dots);
+    for y in min_y..=max_y {
+        for x in min_x..=max_x {
+            if dots.contains(&Dot(x, y)) {
+                print!("#");
+            } else {
+                print!(".");
+            }
+        }
+        print!("\n");
+    }
+}
+
+pub fn part2(input: &InputData) {
+    let mut folded_dots = HashSet::new();
+    for dot in &input.dots {
+        folded_dots.insert(dot.clone());
+    }
+    for fold in &input.folds {
+        folded_dots = perform_fold(&folded_dots, fold);
+    }
+    render_dots(&folded_dots);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
