@@ -12,7 +12,7 @@ pub fn parse_input(input: &str) -> [[u32; 10]; 10] {
         .unwrap()
 }
 
-fn display_grid(grid: &[[u32; 10]; 10]) {
+fn _display_grid(grid: &[[u32; 10]; 10]) {
     for i in 0..grid.len() {
         for j in 0..grid[i].len() {
             print!("{:X}", grid[i][j]);
