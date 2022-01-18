@@ -16,6 +16,8 @@ mod day15;
 mod day16;
 mod day17;
 mod day18;
+mod day19;
+mod day20;
 
 use std::{env, process};
 use std::fs::File;
@@ -68,6 +70,8 @@ fn run(day: i32, part: i32, input_filename: &str) {
         "17.2" => println!("{}", day17::part2(&day17::parse_input(&contents))),
         "18.1" => println!("{}", day18::part1(&day18::parse_input(&contents))),
         "18.2" => println!("{}", day18::part2(&day18::parse_input(&contents))),
+        "19.1" => println!("{}", day19::part1(&day19::parse_input(&contents))),
+        "19.2" => println!("{}", day19::part2(&day19::parse_input(&contents))),
         _ => println!("Day {} part {} not found", day, part)
     }
 }
