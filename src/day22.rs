@@ -1,17 +1,20 @@
-use std::{convert::{TryFrom, TryInto}, num::ParseIntError, collections::HashSet};
-
+use std::{
+	collections::HashSet,
+	convert::{TryFrom, TryInto},
+	num::ParseIntError,
+};
 
 #[derive(Debug, Clone)]
 pub struct Cuboid {
-    x: (i32, i32),
-    y: (i32, i32),
-    z: (i32, i32)
+	x: (i32, i32),
+	y: (i32, i32),
+	z: (i32, i32),
 }
 
 #[derive(Debug)]
 pub enum StepAction {
-    On,
-    Off
+	On,
+	Off,
 }
 
 #[derive(Debug)]
@@ -19,210 +22,216 @@ pub struct RebootStep(StepAction, Cuboid);
 
 #[derive(Debug)]
 pub enum ParseRangeError {
-    Empty,
-    BadLen,
-    ParseInt(ParseIntError)
+	Empty,
+	BadLen,
+	ParseInt(ParseIntError),
 }
 
 #[derive(Debug)]
 pub enum ParseCuboidError {
-    Empty,
-    BadLen,
-    ParseRange(ParseRangeError)
+	Empty,
+	BadLen,
+	ParseRange(ParseRangeError),
 }
 
 #[derive(Debug)]
 pub enum ParseRebootStepError {
-    Empty,
-    BadLen,
-    BadAction,
-    ParseCuboid(ParseCuboidError)
+	Empty,
+	BadLen,
+	BadAction,
+	ParseCuboid(ParseCuboidError),
 }
 
 impl Cuboid {
-    fn contains(&self, point: &(i32, i32, i32)) -> bool {
-        self.x.0 <= point.0 && point.0 <= self.x.1 &&
-        self.y.0 <= point.1 && point.1 <= self.y.1 &&
-        self.z.0 <= point.2 && point.2 <= self.z.1
-    }
+	fn contains(&self, point: &(i32, i32, i32)) -> bool {
+		self.x.0 <= point.0
+			&& point.0 <= self.x.1
+			&& self.y.0 <= point.1
+			&& point.1 <= self.y.1
+			&& self.z.0 <= point.2
+			&& point.2 <= self.z.1
+	}
 
-    fn clamp(&self, other: &Cuboid) -> Cuboid {
-        Cuboid {
-            x: (self.x.0.max(other.x.0), self.x.1.min(other.x.1)),
-            y: (self.y.0.max(other.y.0), self.y.1.min(other.y.1)),
-            z: (self.z.0.max(other.z.0), self.z.1.min(other.z.1)),
-        }
-    }
+	fn clamp(&self, other: &Cuboid) -> Cuboid {
+		Cuboid {
+			x: (self.x.0.max(other.x.0), self.x.1.min(other.x.1)),
+			y: (self.y.0.max(other.y.0), self.y.1.min(other.y.1)),
+			z: (self.z.0.max(other.z.0), self.z.1.min(other.z.1)),
+		}
+	}
 
-    fn intersection(&self, other: &Cuboid) -> Option<Cuboid> {
-        if self.z.0 > other.z.1 || other.z.0 > self.z.1 { return None; }
-        if self.y.0 > other.y.1 || other.y.0 > self.y.1 { return None; }
-        if self.x.0 > other.x.1 || other.x.0 > self.x.1 { return None; }
-        Some(self.clamp(other))
-    }
+	fn intersection(&self, other: &Cuboid) -> Option<Cuboid> {
+		if self.z.0 > other.z.1 || other.z.0 > self.z.1 {
+			return None;
+		}
+		if self.y.0 > other.y.1 || other.y.0 > self.y.1 {
+			return None;
+		}
+		if self.x.0 > other.x.1 || other.x.0 > self.x.1 {
+			return None;
+		}
+		Some(self.clamp(other))
+	}
 
-    fn volume(&self) -> u64 {
-        (self.x.1 - self.x.0 + 1) as u64 *
-        (self.y.1 - self.y.0 + 1) as u64 *
-        (self.z.1 - self.z.0 + 1) as u64
-    }
+	fn volume(&self) -> u64 {
+		(self.x.1 - self.x.0 + 1) as u64
+			* (self.y.1 - self.y.0 + 1) as u64
+			* (self.z.1 - self.z.0 + 1) as u64
+	}
 }
 
 impl From<ParseIntError> for ParseRangeError {
-    fn from(e: ParseIntError) -> Self {
-        ParseRangeError::ParseInt(e)
-    }
+	fn from(e: ParseIntError) -> Self {
+		ParseRangeError::ParseInt(e)
+	}
 }
 
 impl From<ParseRangeError> for ParseCuboidError {
-    fn from(e: ParseRangeError) -> Self {
-        ParseCuboidError::ParseRange(e)
-    }
+	fn from(e: ParseRangeError) -> Self {
+		ParseCuboidError::ParseRange(e)
+	}
 }
 
 fn parse_range(value: &str) -> Result<(i32, i32), ParseRangeError> {
-    if value.is_empty() {
-        return Err(ParseRangeError::Empty);
-    }
-    let (start, end) = value[2..]
-        .split_once("..")
-        .ok_or(ParseRangeError::BadLen)?;
-    Ok((start.parse()?, end.parse()?))
+	if value.is_empty() {
+		return Err(ParseRangeError::Empty);
+	}
+	let (start, end) = value[2..].split_once("..").ok_or(ParseRangeError::BadLen)?;
+	Ok((start.parse()?, end.parse()?))
 }
 
 impl TryFrom<&str> for Cuboid {
-    type Error = ParseCuboidError;
+	type Error = ParseCuboidError;
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        if value.is_empty() {
-            return Err(Self::Error::Empty);
-        }
-        let ranges: Vec<_> = value.split(',')
-            .map(parse_range)
-            .collect::<Result<_, _>>()?;
-        if ranges.len() != 3 {
-            return Err(Self::Error::BadLen);
-        }
-        Ok(Cuboid {
-            x: ranges[0],
-            y: ranges[1],
-            z: ranges[2]
-        })
-    }
+	fn try_from(value: &str) -> Result<Self, Self::Error> {
+		if value.is_empty() {
+			return Err(Self::Error::Empty);
+		}
+		let ranges: Vec<_> = value
+			.split(',')
+			.map(parse_range)
+			.collect::<Result<_, _>>()?;
+		if ranges.len() != 3 {
+			return Err(Self::Error::BadLen);
+		}
+		Ok(Cuboid {
+			x: ranges[0],
+			y: ranges[1],
+			z: ranges[2],
+		})
+	}
 }
 
 impl From<ParseCuboidError> for ParseRebootStepError {
-    fn from(e: ParseCuboidError) -> Self {
-        ParseRebootStepError::ParseCuboid(e)
-    }
+	fn from(e: ParseCuboidError) -> Self {
+		ParseRebootStepError::ParseCuboid(e)
+	}
 }
 
 impl TryFrom<&str> for RebootStep {
-    type Error = ParseRebootStepError;
+	type Error = ParseRebootStepError;
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        if value.is_empty() {
-            return Err(Self::Error::Empty);
-        }
-        let (action_str, cuboid) = value.split_once(" ").ok_or(Self::Error::BadLen)?;
+	fn try_from(value: &str) -> Result<Self, Self::Error> {
+		if value.is_empty() {
+			return Err(Self::Error::Empty);
+		}
+		let (action_str, cuboid) = value.split_once(" ").ok_or(Self::Error::BadLen)?;
 
-        let action = match action_str {
-            "on" => StepAction::On,
-            "off" => StepAction::Off,
-            _ => return Err(Self::Error::BadAction)
-        };
+		let action = match action_str {
+			"on" => StepAction::On,
+			"off" => StepAction::Off,
+			_ => return Err(Self::Error::BadAction),
+		};
 
-        Ok(RebootStep(action, cuboid.try_into()?))
-    }
+		Ok(RebootStep(action, cuboid.try_into()?))
+	}
 }
 
 pub fn parse_input(input: &str) -> Vec<RebootStep> {
-    input.lines()
-        .map(|l| l.try_into().unwrap())
-        .collect()
+	input.lines().map(|l| l.try_into().unwrap()).collect()
 }
 
 fn count_cubes_in_cuboid(steps: &[RebootStep], region: &Cuboid) -> u32 {
-    let mut cubes = HashSet::new();
+	let mut cubes = HashSet::new();
 
-    for step in steps {
-        let clamped = step.1.clamp(region);
-        for x in clamped.x.0..=clamped.x.1 {
-            for y in clamped.y.0..=clamped.y.1 {
-                for z in clamped.z.0..=clamped.z.1 {
-                    let cube = (x, y, z);
-                    match step.0 {
-                        StepAction::On => cubes.insert(cube),
-                        StepAction::Off => cubes.remove(&cube)
-                    };
-                }
-            }
-        }
-    }
+	for step in steps {
+		let clamped = step.1.clamp(region);
+		for x in clamped.x.0..=clamped.x.1 {
+			for y in clamped.y.0..=clamped.y.1 {
+				for z in clamped.z.0..=clamped.z.1 {
+					let cube = (x, y, z);
+					match step.0 {
+						StepAction::On => cubes.insert(cube),
+						StepAction::Off => cubes.remove(&cube),
+					};
+				}
+			}
+		}
+	}
 
-    cubes.len() as u32
+	cubes.len() as u32
 }
 
 // From: http://twocentstudios.com/2016/08/16/calculating-the-area-of-multiple-intersecting-rectangles-with-swift
 /*
 fn total_volume(cuboids: &Vec<Cuboid>) -> u64 {
-    let mut unique_x = HashSet::new();
-    let mut unique_y = HashSet::new();
-    let mut unique_z = HashSet::new();
-    for cuboid in cuboids {
-        unique_x.insert(cuboid.x.0);
-        unique_x.insert(cuboid.x.1);
-        unique_y.insert(cuboid.y.0);
-        unique_y.insert(cuboid.y.1);
-        unique_z.insert(cuboid.z.0);
-        unique_z.insert(cuboid.z.1);
-    }
+		let mut unique_x = HashSet::new();
+		let mut unique_y = HashSet::new();
+		let mut unique_z = HashSet::new();
+		for cuboid in cuboids {
+				unique_x.insert(cuboid.x.0);
+				unique_x.insert(cuboid.x.1);
+				unique_y.insert(cuboid.y.0);
+				unique_y.insert(cuboid.y.1);
+				unique_z.insert(cuboid.z.0);
+				unique_z.insert(cuboid.z.1);
+		}
 
-    let mut unique_x: Vec<_> = unique_x.iter().collect();
-    let mut unique_y: Vec<_> = unique_y.iter().collect();
-    let mut unique_z: Vec<_> = unique_z.iter().collect();
+		let mut unique_x: Vec<_> = unique_x.iter().collect();
+		let mut unique_y: Vec<_> = unique_y.iter().collect();
+		let mut unique_z: Vec<_> = unique_z.iter().collect();
 
-    unique_x.sort();
-    unique_y.sort();
-    unique_z.sort();
+		unique_x.sort();
+		unique_y.sort();
+		unique_z.sort();
 
-    let mut volume = 0;
-    for (i, x) in unique_x.iter().enumerate().skip(1) {
-        for (j, y) in unique_y.iter().enumerate().skip(1) {
-            for (k, z) in unique_z.iter().enumerate().skip(1) {
-                let cuboid = Cuboid {
-                    x: (*unique_x[i-1], **x),
-                    y: (*unique_y[j-1], **y),
-                    z: (*unique_z[k-1], **z)
-                };
-                for c in cuboids {
-                    if c.has_overlap(&cuboid) {
-                        volume += cuboid.volume();
-                        break;
-                    }
-                }
+		let mut volume = 0;
+		for (i, x) in unique_x.iter().enumerate().skip(1) {
+				for (j, y) in unique_y.iter().enumerate().skip(1) {
+						for (k, z) in unique_z.iter().enumerate().skip(1) {
+								let cuboid = Cuboid {
+										x: (*unique_x[i-1], **x),
+										y: (*unique_y[j-1], **y),
+										z: (*unique_z[k-1], **z)
+								};
+								for c in cuboids {
+										if c.has_overlap(&cuboid) {
+												volume += cuboid.volume();
+												break;
+										}
+								}
 
-                // let point = (
-                //     (*unique_x[i-1] + **x)/2,
-                //     (*unique_y[j-1] + **y)/2,
-                //     (*unique_z[k-1] + **z)/2
-                // );
-                // for c in cuboids {
-                //     if c.contains(&point) {
-                //         let cuboid = Cuboid {
-                //             x: (*unique_x[i-1], **x),
-                //             y: (*unique_y[j-1], **y),
-                //             z: (*unique_z[k-1], **z)
-                //         };
-                //         volume += cuboid.volume();
-                //         break;
-                //     }
-                // }
-            }
-        }
-    }
+								// let point = (
+								//     (*unique_x[i-1] + **x)/2,
+								//     (*unique_y[j-1] + **y)/2,
+								//     (*unique_z[k-1] + **z)/2
+								// );
+								// for c in cuboids {
+								//     if c.contains(&point) {
+								//         let cuboid = Cuboid {
+								//             x: (*unique_x[i-1], **x),
+								//             y: (*unique_y[j-1], **y),
+								//             z: (*unique_z[k-1], **z)
+								//         };
+								//         volume += cuboid.volume();
+								//         break;
+								//     }
+								// }
+						}
+				}
+		}
 
-    volume
+		volume
 }
 */
 
@@ -231,50 +240,51 @@ fn total_volume(cuboids: &Vec<Cuboid>) -> u64 {
  * Based on inclusion-exclusion principle. https://en.wikipedia.org/wiki/Inclusion%E2%80%93exclusion_principle
  */
 fn count_cubes(steps: Vec<RebootStep>) -> u64 {
-    let mut cuboids: Vec<(Cuboid, bool)> = Vec::new();
+	let mut cuboids: Vec<(Cuboid, bool)> = Vec::new();
 
-    for step in steps {
-        let mut extra_cuboids = Vec::new();
-        for c in cuboids.iter() {
-            if let Some(intersect) = step.1.intersection(&c.0) {
-                extra_cuboids.push((intersect, !c.1));
-            }
-        }
+	for step in steps {
+		let mut extra_cuboids = Vec::new();
+		for c in cuboids.iter() {
+			if let Some(intersect) = step.1.intersection(&c.0) {
+				extra_cuboids.push((intersect, !c.1));
+			}
+		}
 
-        if let StepAction::On = step.0 {
-            cuboids.push((step.1, true));
-        }
-        cuboids.append(&mut extra_cuboids);
-    }
+		if let StepAction::On = step.0 {
+			cuboids.push((step.1, true));
+		}
+		cuboids.append(&mut extra_cuboids);
+	}
 
-    let mut total_volume = 0;
-    for (cuboid, additive) in cuboids {
-        let sign: i64 = if additive { 1 } else { -1 };
-        total_volume += sign * cuboid.volume() as i64;
-    }
-    total_volume as u64
+	let mut total_volume = 0;
+	for (cuboid, additive) in cuboids {
+		let sign: i64 = if additive { 1 } else { -1 };
+		total_volume += sign * cuboid.volume() as i64;
+	}
+	total_volume as u64
 }
 
 pub fn part1(steps: &[RebootStep]) -> u32 {
-    let region = Cuboid{
-        x: (-50, 50),
-        y: (-50, 50),
-        z: (-50, 50)
-    };
-    count_cubes_in_cuboid(steps, &region)
+	let region = Cuboid {
+		x: (-50, 50),
+		y: (-50, 50),
+		z: (-50, 50),
+	};
+	count_cubes_in_cuboid(steps, &region)
 }
 
 pub fn part2(steps: Vec<RebootStep>) -> u64 {
-    count_cubes(steps)
+	count_cubes(steps)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+	use super::*;
 
-    #[test]
-    fn part1_example() {
-        let steps = parse_input("on x=-20..26,y=-36..17,z=-47..7
+	#[test]
+	fn part1_example() {
+		let steps = parse_input(
+			"on x=-20..26,y=-36..17,z=-47..7
 on x=-20..33,y=-21..23,z=-26..28
 on x=-22..28,y=-29..23,z=-38..16
 on x=-46..7,y=-6..46,z=-50..-1
@@ -295,14 +305,16 @@ on x=-49..-5,y=-3..45,z=-29..18
 off x=18..30,y=-20..-8,z=-3..13
 on x=-41..9,y=-7..43,z=-33..15
 on x=-54112..-39298,y=-85059..-49293,z=-27449..7877
-on x=967..23432,y=45373..81175,z=27513..53682");
-        let result = part1(&steps);
-        assert_eq!(result, 590784);
-    }
+on x=967..23432,y=45373..81175,z=27513..53682",
+		);
+		let result = part1(&steps);
+		assert_eq!(result, 590784);
+	}
 
-    #[test]
-    fn part2_example() {
-        let steps = parse_input("on x=-5..47,y=-31..22,z=-19..33
+	#[test]
+	fn part2_example() {
+		let steps = parse_input(
+			"on x=-5..47,y=-31..22,z=-19..33
 on x=-44..5,y=-27..21,z=-14..35
 on x=-49..-1,y=-11..42,z=-10..38
 on x=-20..34,y=-40..6,z=-44..1
@@ -361,8 +373,9 @@ off x=-37810..49457,y=-71013..-7894,z=-105357..-13188
 off x=-27365..46395,y=31009..98017,z=15428..76570
 off x=-70369..-16548,y=22648..78696,z=-1892..86821
 on x=-53470..21291,y=-120233..-33476,z=-44150..38147
-off x=-93533..-4276,y=-16170..68771,z=-104985..-24507");
-        let result = part2(steps);
-        assert_eq!(result, 2758514936282235);
-    }
+off x=-93533..-4276,y=-16170..68771,z=-104985..-24507",
+		);
+		let result = part2(steps);
+		assert_eq!(result, 2758514936282235);
+	}
 }
