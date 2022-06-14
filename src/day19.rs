@@ -1,31 +1,7 @@
-use std::{collections::{HashSet, HashMap}, ops::{Add, Sub, Neg}};
+use std::{collections::{HashSet, HashMap}, ops::{Add, Sub, Neg, Mul}};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Point(i32, i32, i32);
-
-fn parse_point(line: &str) -> Point {
-	let nums: Vec<&str> = line.splitn(3, ',').collect();
-	let x = nums[0].parse().unwrap();
-	let y = nums[1].parse().unwrap();
-	let z = nums[2].parse().unwrap();
-	Point(x, y, z)
-}
-
-fn parse_scanner(input: &str) -> Vec<Point> {
-	let mut beacons = Vec::new();
-	for line in input.lines().skip(1) {
-		beacons.push(parse_point(line));
-	}
-	beacons
-}
-
-pub fn parse_input(input: &str) -> Vec<Vec<Point>> {
-	let mut scanners = Vec::new();
-	for scanner_section in input.split("\n\n") {
-		scanners.push(parse_scanner(scanner_section));
-	}
-	scanners
-}
 
 impl Add for Point {
 		type Output = Self;
@@ -57,6 +33,113 @@ impl Neg for Point {
     fn neg(self) -> Self::Output {
 				Point(-self.0, -self.1, -self.2)
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Rotation(i32, i32, i32, i32, i32, i32, i32, i32, i32);
+
+impl Mul<Point> for Rotation {
+	type Output = Point;
+
+	fn mul(self, rhs: Point) -> Self::Output {
+		Point(
+			self.0*rhs.0 + self.1*rhs.1 + self.2*rhs.2,
+			self.3*rhs.0 + self.4*rhs.1 + self.5*rhs.2,
+			self.6*rhs.0 + self.7*rhs.1 + self.8*rhs.2
+		)
+	}
+}
+
+impl Mul for Rotation {
+	type Output = Rotation;
+
+	// https://www.fhybea.com/en/multiplication-matrix-3x3.html
+	fn mul(self, rhs: Self) -> Self::Output {
+		Rotation(
+			(self.0 * rhs.0) + (self.1 * rhs.3) + (self.2 * rhs.6),
+			(self.0 * rhs.1) + (self.1 * rhs.4) + (self.2 * rhs.7),
+			(self.0 * rhs.2) + (self.1 * rhs.5) + (self.2 * rhs.8),
+			(self.3 * rhs.0) + (self.4 * rhs.3) + (self.5 * rhs.6),
+			(self.3 * rhs.1) + (self.4 * rhs.4) + (self.5 * rhs.7),
+			(self.3 * rhs.2) + (self.4 * rhs.5) + (self.5 * rhs.8),
+			(self.6 * rhs.0) + (self.7 * rhs.3) + (self.8 * rhs.6),
+			(self.6 * rhs.1) + (self.7 * rhs.4) + (self.8 * rhs.7),
+			(self.6 * rhs.2) + (self.7 * rhs.5) + (self.8 * rhs.8)
+		)
+	}
+}
+
+impl Rotation {
+	fn identity() -> Rotation {
+		Rotation(1, 0, 0, 0, 1, 0, 0, 0, 1)
+	}
+
+	fn transpose(self) -> Rotation {
+		Rotation(
+			self.0,
+			self.3,
+			self.6,
+
+			self.1,
+			self.4,
+			self.7,
+
+			self.2,
+			self.5,
+			self.8,
+		)
+	}
+}
+
+// https://i.imgur.com/Ff1vGT9.png
+const ROTATIONS: [Rotation; 24] = [
+ 	Rotation( 1, 0, 0, 0, 1, 0, 0, 0, 1), // (x ,y ,z)
+ 	Rotation( 1, 0, 0, 0, 0, 1, 0,-1, 0), // (x ,z ,-y)
+ 	Rotation( 1, 0, 0, 0,-1, 0, 0, 0,-1), // (x ,-y,-z)
+ 	Rotation( 1, 0, 0, 0, 0,-1, 0, 1, 0), // (x ,-z,y  )
+	Rotation(-1, 0, 0, 0,-1, 0, 0, 0, 1), // (-x,-y,z)
+	Rotation(-1, 0, 0, 0, 0, 1, 0, 1, 0), // (-x,z ,y )
+	Rotation(-1, 0, 0, 0, 1, 0, 0, 0,-1), // (-x,y ,-z)
+	Rotation(-1, 0, 0, 0, 0,-1, 0,-1, 0), // (-x,-z,-y )
+ 	Rotation( 0, 1, 0, 0, 0, 1, 1, 0, 0), // (y ,z ,x)
+ 	Rotation( 0, 1, 0, 1, 0, 0, 0, 0,-1), // (y ,x ,-z)
+ 	Rotation( 0, 1, 0, 0, 0,-1,-1, 0, 0), // (y ,-z,-x)
+ 	Rotation( 0, 1, 0,-1, 0, 0, 0, 0, 1), // (y ,-x,z  )
+ 	Rotation( 0,-1, 0, 0, 0,-1, 1, 0, 0), // (-y,-z,x)
+ 	Rotation( 0,-1, 0, 1, 0, 0, 0, 0, 1), // (-y,x ,z )
+ 	Rotation( 0,-1, 0, 0, 0, 1,-1, 0, 0), // (-y,z ,-x)
+ 	Rotation( 0,-1, 0,-1, 0, 0, 0, 0,-1), // (-y,-x,-z )
+ 	Rotation( 0, 0, 1, 1, 0, 0, 0, 1, 0), // (z ,x ,y)
+ 	Rotation( 0, 0, 1, 0, 1, 0,-1, 0, 0), // (z ,y ,-x)
+ 	Rotation( 0, 0, 1,-1, 0, 0, 0,-1, 0), // (z ,-x,-y)
+ 	Rotation( 0, 0, 1, 0,-1, 0, 1, 0, 0), // (z ,-y,x  )
+ 	Rotation( 0, 0,-1,-1, 0, 0, 0, 1, 0), // (-z,-x,y)
+ 	Rotation( 0, 0,-1, 0, 1, 0, 1, 0, 0), // (-z,y ,x )
+ 	Rotation( 0, 0,-1, 1, 0, 0, 0,-1, 0), // (-z,x ,-y)
+ 	Rotation( 0, 0,-1, 0,-1, 0,-1, 0, 0), // (-z,-y,-x)
+];
+
+fn parse_point(line: &str) -> Point {
+	let nums: Vec<&str> = line.splitn(3, ',').collect();
+	let x = nums[0].parse().unwrap();
+	let y = nums[1].parse().unwrap();
+	let z = nums[2].parse().unwrap();
+	Point(x, y, z)
+}
+
+fn parse_scanner(input: &str) -> Vec<Point> {
+	let mut beacons = Vec::new();
+	for line in input.lines().skip(1) {
+		beacons.push(parse_point(line));
+	}
+	beacons
+}
+
+pub fn parse_input(input: &str) -> Vec<Vec<Point>> {
+	let mut scanners = Vec::new(); for scanner_section in input.split("\n\n") {
+		scanners.push(parse_scanner(scanner_section));
+	}
+	scanners
 }
 
 fn calc_diff(a: &Point, b: &Point) -> Point {
@@ -105,57 +188,19 @@ fn find_possibly_overlapping_scanners(scanners: &[Vec<Point>]) -> Vec<(usize, us
 	pairs
 }
 
-fn calc_rotations(p: Point) -> Vec<Point> {
-	// https://i.imgur.com/Ff1vGT9.png
-	let Point(x, y, z) = p;
-	vec![
-		Point(x ,y ,z), Point(x ,z,-y), Point(x ,-y,-z), Point(x ,-z,y  ),
-		Point(-x,-y,z), Point(-x,z,y ), Point(-x,y ,-z), Point(-x,-z,-y ),
-		Point(y ,z ,x), Point(y ,x,-z), Point(y ,-z,-x), Point(y ,-x,z  ),
-		Point(-y,-z,x), Point(-y,x,z ), Point(-y,z ,-x), Point(-y,-x,-z ),
-		Point(z ,x ,y), Point(z ,y,-x), Point(z ,-x,-y), Point(z ,-y,x  ),
-		Point(-z,-x,y), Point(-z,y,x ), Point(-z,x ,-y), Point(-z,-y,-x)
-	]
-}
-
-fn calc_rotation(p: Point, rotation: usize) -> Point {
-	calc_rotations(p)[rotation]
-}
-
-fn combine_rotations(r1: usize, r2: usize) -> usize {
-	let target_point = calc_rotation(calc_rotation(Point(1, 2, 3), r1), r2);
-	for (i, rotated) in calc_rotations(Point(1, 2, 3)).iter().enumerate() {
-		if *rotated == target_point {
-			return i;
-		}
-	}
-	panic!()
-}
-
-fn invert_rotation(r: usize) -> usize {
-	let target_point = calc_rotation(Point(1, 2, 3), r);
-	for (i, rotated) in calc_rotations(target_point).iter().enumerate() {
-		if *rotated == Point(1, 2, 3) {
-			return i;
-		}
-	}
-	panic!()
-}
-
-fn find_possible_rotations(dir1: Point, dir2: Point) -> Vec<usize> {
+fn find_possible_rotations(dir1: Point, dir2: Point) -> Vec<Rotation> {
 	let mut possible_rotations = vec![];
 
-	let rotated_dirs2 = calc_rotations(dir2);
-	for (i, rotated_dir2) in rotated_dirs2.iter().enumerate() {
-		if *rotated_dir2 == dir1 {
-			possible_rotations.push(i);
+	for rot in ROTATIONS {
+		if rot.mul(dir2) == dir1 {
+			possible_rotations.push(rot);
 			break;
 		}
 	}
 
-	for (i, rotated_dir2) in rotated_dirs2.iter().enumerate() {
-		if *rotated_dir2 == -dir1 {
-			possible_rotations.push(i);
+	for rot in ROTATIONS {
+		if rot.mul(dir2) == -dir1 {
+			possible_rotations.push(rot);
 			break;
 		}
 	}
@@ -163,13 +208,7 @@ fn find_possible_rotations(dir1: Point, dir2: Point) -> Vec<usize> {
 	possible_rotations
 }
 
-fn apply_transformation(points: &[Point], translation: Point, rotation: usize) -> Vec<Point> {
-	points.iter()
-		.map(|p| calc_rotation(*p, rotation) + translation)
-		.collect()
-}
-
-fn find_transformation(scanner1: &[Point], scanner2: &[Point]) -> Option<(Point, usize)> {
+fn find_transformation(scanner1: &[Point], scanner2: &[Point]) -> Option<(Point, Rotation)> {
 	let point_pairs1 = get_point_pairs(scanner1);
 	let point_pairs2 = get_point_pairs(scanner2);
 
@@ -184,9 +223,9 @@ fn find_transformation(scanner1: &[Point], scanner2: &[Point]) -> Option<(Point,
 			let dir2 = pair2.0 - pair2.1;
 
 			for rotation in find_possible_rotations(dir1, dir2) {
-				let translation = pair1.0 - calc_rotation(pair2.0, rotation);
+				let translation = pair1.0 - rotation.mul(pair2.0);
 				let transformed_scanner2: HashSet<_> = scanner2.iter()
-					.map(|p| calc_rotation(*p, rotation) + translation)
+					.map(|p| rotation.mul(*p) + translation)
 					.collect();
 
 				if scanner1_set.intersection(&transformed_scanner2).count() >= 12 {
@@ -199,16 +238,16 @@ fn find_transformation(scanner1: &[Point], scanner2: &[Point]) -> Option<(Point,
 	None
 }
 
-fn find_canonical_transformations(scanners: &[Vec<Point>]) -> Vec<(Point, usize)> {
+fn find_canonical_transformations(scanners: &[Vec<Point>]) -> Vec<(Point, Rotation)> {
 	let mut canonical = vec![];
 	for _ in 0..scanners.len() {
-		canonical.push((Point(0, 0, 0), 0))
+		canonical.push((Point(0, 0, 0), Rotation::identity()))
 	}
 
 	let mut transforms = HashMap::new();
 	for (scanner1, scanner2) in find_possibly_overlapping_scanners(scanners) {
 		let (translation, rotation) = find_transformation(&scanners[scanner1], &scanners[scanner2]).unwrap();
-		let inv_rotation = invert_rotation(rotation);
+		let inv_rotation = rotation.transpose();
 
 		transforms.entry(scanner1)
 			.or_insert_with(Vec::new)
@@ -216,10 +255,10 @@ fn find_canonical_transformations(scanners: &[Vec<Point>]) -> Vec<(Point, usize)
 
 		transforms.entry(scanner2)
 			.or_insert_with(Vec::new)
-			.push((scanner1, calc_rotation(-translation, inv_rotation), inv_rotation));
+			.push((scanner1, inv_rotation.mul(-translation), inv_rotation));
 	}
 
-	let mut stack = vec![(0, Point(0, 0, 0), 0)];
+	let mut stack = vec![(0, Point(0, 0, 0), Rotation::identity())];
 	let mut visited = HashSet::new();
 	while !stack.is_empty() {
 		let (id, translation, rotation) = stack.pop().unwrap();
@@ -230,14 +269,12 @@ fn find_canonical_transformations(scanners: &[Vec<Point>]) -> Vec<(Point, usize)
 		for nbr in transforms.get(&id).unwrap() {
 			if visited.contains(&nbr.0) { continue; }
 
-			let new_translation = calc_rotation(nbr.1, rotation) + translation;
-			let new_rotation = combine_rotations(nbr.2, rotation);
+			let new_translation = rotation.mul(nbr.1) + translation;
+			let new_rotation = rotation.mul(nbr.2);
 			stack.push((nbr.0, new_translation, new_rotation));
 			canonical[nbr.0] = (new_translation, new_rotation);
 		}
 	}
-
-	// dbg!(&canonical);
 
 	canonical
 }
@@ -248,7 +285,7 @@ pub fn part1(scanners: &[Vec<Point>]) -> u32 {
 
 	for (i, points) in scanners.iter().enumerate() {
 		let (translation, rotation) = transforms[i];
-		for point in apply_transformation(points, translation, rotation) {
+		for point in points.iter().map(|p| rotation.mul(*p) + translation) {
 			beacons.insert(point);
 		}
 	}
@@ -332,6 +369,34 @@ mod tests {
 		let scanner2 = vec![Point(686, 422, 578), Point(605, 423, 415), Point(515, 917, -361), Point(-336, 658, 858), Point(95, 138, 22), Point(-476, 619, 847), Point(-340, -569, -846), Point(567, -361, 727), Point(-460, 603, -452), Point(669, -402, 600), Point(729, 430, 532), Point(-500, -761, 534), Point(-322, 571, 750), Point(-466, -666, -811), Point(-429, -592, 574), Point(-355, 545, -477), Point(703, -491, -529), Point(-328, -685, 520), Point(413, 935, -424), Point(-391, 539, -444), Point(586, -435, 557), Point(-364, -763, -893), Point(807, -499, -711), Point(755, -354, -619), Point(553, 889, -390)];
 		let (translation, rotation) = find_transformation(&scanner1, &scanner2).unwrap();
 		assert_eq!(translation, Point(68, -1246, -43));
-		assert_eq!(rotation, 6);
+		assert_eq!(rotation, ROTATIONS[6]);
+	}
+
+	#[test]
+	#[rustfmt::skip]
+	fn rotation_matrices() {
+		let p = Point(1, 2, 3);
+		let Point(x, y, z) = p;
+		let ref_rotations = vec![
+			Point(x ,y ,z), Point(x ,z,-y), Point(x ,-y,-z), Point(x ,-z,y  ),
+			Point(-x,-y,z), Point(-x,z,y ), Point(-x,y ,-z), Point(-x,-z,-y ),
+			Point(y ,z ,x), Point(y ,x,-z), Point(y ,-z,-x), Point(y ,-x,z  ),
+			Point(-y,-z,x), Point(-y,x,z ), Point(-y,z ,-x), Point(-y,-x,-z ),
+			Point(z ,x ,y), Point(z ,y,-x), Point(z ,-x,-y), Point(z ,-y,x  ),
+			Point(-z,-x,y), Point(-z,y,x ), Point(-z,x ,-y), Point(-z,-y,-x)
+		];
+		let calculated: Vec<_> = ROTATIONS.iter().map(|rot| rot.mul(p)).collect();
+		for (i, rot) in calculated.iter().enumerate() {
+			assert_eq!(*rot, ref_rotations[i]);
+		}
+	}
+
+	#[test]
+	#[rustfmt::skip]
+	fn multiply_matrices() {
+		let a = Rotation(2, 3, 1, 7, 4, 1, 9, -2, 1);
+		let b = Rotation(9, -2, -1, 5, 7, 3, 8, 1, 0);
+		let c = a.mul(b);
+		assert_eq!(c, Rotation(41, 18, 7,  91, 15, 5, 79, -31, -15));
 	}
 }
