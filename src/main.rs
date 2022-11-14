@@ -1,4 +1,12 @@
 mod day1;
+mod day2;
+mod day3;
+mod day4;
+mod day5;
+mod day6;
+mod day7;
+mod day8;
+mod day9;
 mod day10;
 mod day11;
 mod day12;
@@ -9,19 +17,12 @@ mod day16;
 mod day17;
 mod day18;
 mod day19;
-mod day2;
 mod day20;
 mod day21;
 mod day22;
 mod day23;
 mod day24;
-mod day3;
-mod day4;
-mod day5;
-mod day6;
-mod day7;
-mod day8;
-mod day9;
+mod day25;
 
 use std::fs::File;
 use std::io::prelude::*;
@@ -129,6 +130,8 @@ fn run(day: i32, part: i32, input_filename: &str) {
 		"23.2" => println!("{}", day23::part2(day23::parse_input(&contents))),
 		"24.1" => println!("{}", day24::part1(day24::parse_input(&contents))),
 		"24.2" => println!("{}", day24::part2(day24::parse_input(&contents))),
+		"25.1" => println!("{}", day25::part1(day25::parse_input(&contents))),
+		"25.2" => println!("{}", day25::part2(day25::parse_input(&contents))),
 		_ => println!("Day {} part {} not found", day, part),
 	}
 }
